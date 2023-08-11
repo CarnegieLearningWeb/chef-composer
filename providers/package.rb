@@ -7,7 +7,7 @@ action :install do
 		group new_resource.group
 		cwd new_resource.install_path
 		command "composer install #{arguments}"
-		
+
 		only_if "composer help"
 	end
 
@@ -17,13 +17,13 @@ end
 action :update do
 	Chef::Log.info("Update package: #{new_resource.name}")
   arguments = initialize_arguments(new_resource)
-	
+
 	execute "update-composer-packages" do
 		user new_resource.user
 		group new_resource.group
 		cwd new_resource.install_path
 		command "composer update #{arguments}"
-		
+
 		only_if "composer help"
 	end
 
@@ -33,7 +33,7 @@ end
 action :create_project do
 	arguments = "--no-interaction --no-ansi --stability #{new_resource.stability}"
 	Chef::Log.info("Composer create-project: #{new_resource.name}")
-	
+
 	if new_resource.dev
 		arguments += " --dev"
 	end
@@ -55,7 +55,7 @@ action :create_project do
 
 	execute "composer create-project" do
 		command "composer create-project #{arguments} #{new_resource.name} #{new_resource.install_path}"
-		not_if "test -d #{new_resource.install_path}"
+		not_if { Dir.exists?(new_resource.install_path) && !(Dir.entries(new_resource.install_path) - %w{ . .. }).empty? }
 	end
 
 	new_resource.updated_by_last_action(true)
@@ -71,10 +71,10 @@ action :create do
     recursive true
     action :create
 
-    not_if "test -d #{new_resource.install_path}"
+    not_if { Dir.exists?(new_resource.install_path) && !(Dir.entries(new_resource.install_path) - %w{ . .. }).empty? }
   end
 
-  template "composer.json.erb" do
+  template "composer.json.erb for #{new_resource.install_path}" do
     source "composer.json.erb"
     cookbook "composer"
     path "#{new_resource.install_path}/composer.json"
@@ -101,7 +101,7 @@ action :dump_autoload do
     command "composer dump-autoload #{arguments}"
     cwd new_resource.install_path
 
-    not_if "test -d #{new_resource.install_path}"
+    not_if { Dir.exists?(new_resource.install_path) && !(Dir.entries(new_resource.install_path) - %w{ . .. }).empty? }
   end
 
   new_resource.updated_by_last_action(true)
